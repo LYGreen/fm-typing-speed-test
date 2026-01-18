@@ -655,8 +655,6 @@ function changePageTo(page) {
         if (oldPersonalBest === 0) {
             updateResults('firstTest');
         } else if (typingStatus.wpm > oldPersonalBest) {
-            console.log(typingStatus);
-            console.log(oldPersonalBest);
             updateResults('newPersonalTest');
             celebrate();
         } else {
@@ -817,7 +815,6 @@ function updateTimeInfo() {
  * @param {'firstTest' | 'newPersonalTest' | 'normalTest'} test 
  */
 function updateResults(test) {
-    console.log(test);
     /** @type {HTMLDivElement} */
     const completePageDiv = document.querySelector('.complete-page');
 
