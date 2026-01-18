@@ -446,6 +446,12 @@ const modeElements = document.querySelectorAll('input[name=mode]');
 /** @type {HTMLSpanElement} */
 const personalBestWpm = document.getElementById('personal-best-wpm');
 
+/** @type {HTMLSpanElement} */
+const mobileOptionDifficulty = document.getElementById('mobile-option-difficulty');
+
+/** @type {HTMLSpanElement} */
+const mobileOptionMode = document.getElementById('mobile-option-mode');
+
 const pages = {
     typing: {
         element: document.querySelector('.typing-page'),
@@ -987,12 +993,14 @@ goAgainBtn.addEventListener('click', (e) => {
 difficultyElements.forEach((e) => {
     e.addEventListener('change', (ev) => {
         changeDifficultyTo(ev.target.value);
+        mobileOptionDifficulty.textContent = document.querySelector(`label[for='${ev.target.id}'`).textContent;
     });
 });
 
 modeElements.forEach((e) => {
     e.addEventListener('change', (ev) => {
         changeModeTo(ev.target.value);
+        mobileOptionMode.textContent = document.querySelector(`label[for='${ev.target.id}'`).textContent;
     });
 });
 
