@@ -940,13 +940,35 @@ passageElement.addEventListener('click', () => {
     passageInput.focus({ preventScroll: true });
 });
 
+/**
+ * Support special characters like '—' (typed by pressing Alt + 0151 on Windows, or Ctrl + Shift + U -> 2014 -> Enter on Linux. And Chinese support.
+ */
+passageInput.addEventListener('input', (e) => {
+    
+    if (e.inputType === 'insertText') {
+        typingTextBox.addCharacter(e.data);
+        computeAccuracy();
+    }
+
+    updateShownTextbox();
+
+    if (typingTextBox.isFinished()) {
+        stopTyping();
+        changePageTo('complete');
+    }
+
+    passageInput.value = '';
+});
+
 passageInput.addEventListener('keydown', (e) => {
-    e.preventDefault();
 
     if (e.key.length === 1) {
-        typingTextBox.addCharacter(e.key);
-        computeAccuracy();
-    } else if (e.key.toLocaleLowerCase() === 'backspace') {
+        return;
+    }
+
+    e.preventDefault();
+
+    if (e.key.toLocaleLowerCase() === 'backspace') {
         typingTextBox.removeCharacter();
         computeAccuracy();
     } else if (e.key.toLocaleLowerCase() === 'arrowleft') {
@@ -960,10 +982,6 @@ passageInput.addEventListener('keydown', (e) => {
     }
 
     updateShownTextbox();
-    if (typingTextBox.isFinished()) {
-        stopTyping();
-        changePageTo('complete');
-    }
 });
 
 startTypingBtn.addEventListener('click', (e) => {
