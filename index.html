@@ -3,55 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- displays site properly based on user's device -->
-
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png">
-  
   <title>Frontend Mentor | Typing Speed Test</title>
-
-  <!-- Feel free to remove these styles or customise in your own stylesheet 👍 -->
-  <style>
-    .attribution { font-size: 11px; text-align: center; }
-    .attribution a { color: hsl(228, 45%, 44%); }
-  </style>
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png">
+  <link rel="stylesheet" href="./assets/resources/style.css">
+  <script src="./assets/resources/script.js" defer></script>
 </head>
 <body>
+  <header>
+    <picture class="logo">
+      <source media="(max-width: 640px)" srcset="./assets/images/logo-small.svg">
+      <img src="./assets/images/logo-large.svg" alt="">
+    </picture>
+    <div class="personal-best">
+      <img src="./assets/images/icon-personal-best.svg" alt="">
+      <p>Personal best: </p>
+      <span id="personal-best-wpm"><!-- PB --></span>
+      <span> WPM</span>
+    </div>
+  </header>
+  <main>
+    <div class="typing-page">
+      <div class="test-head">
+        <table class="computations regular-medium">
+          <tbody>
+            <tr>
+              <td>WPM: <span class="wpm sora-bold-medium"><!-- WPM --></span></td>
+              <td>Accuracy: <span class="accuracy sora-bold-medium"><!-- Accuracy --></span></td>
+              <td>Time: <span class="time sora-bold-medium"><!-- Time --></span></td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <table class="options sora-small">
+          <tr>
+            <td>
+              <div role="radiogroup" aria-labelledby="difficulty">
+                <span>Difficulty:</span>
+                <div class="mobile-option"><span id="mobile-option-difficulty">Easy</span><img src="./assets/images/icon-down-arrow.svg" alt=""></div>
 
-  Personal best: <!-- PB --> WPM
+                <div class="list">
+                  <input id="easy" name="difficulty" value="easy" type="radio" checked>
+                  <label for="easy">Easy</label>
+                  
+                  <input id="medium" name="difficulty" value="medium" type="radio">
+                  <label for="medium">Medium</label>
 
-  WPM: <!-- WPM -->
-  Accuracy: <!-- Accuracy -->
-  Time: <!-- Time -->
+                  <input id="hard" name="difficulty" value="hard" type="radio">
+                  <label for="hard">Hard</label>
+                </div>
+              </div>
+            </td>
 
-  Difficulty:
-  Easy
-  Medium
-  Hard
+            <td>
+              <div role="radiogroup" aria-labelledby="mode">
+                <span>Mode:</span>
+                <div class="mobile-option"><span id="mobile-option-mode">Timed (60s)</span><img src="./assets/images/icon-down-arrow.svg" alt=""></div>
 
-  Mode:
-  Timed (60s)
-  Passage
+                <div class="list">
+                  <input id="mode-timed" name="mode" value="timed" type="radio" checked>
+                  <label for="mode-timed">Timed (60s)</label>
 
-  <!-- Passage -->
+                  <input id="mode-passage" name="mode" value="passage" type="radio">
+                  <label for="mode-passage">Passage</label>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      
+      <div class="test-body sora-regular">
+        <hr>
+        <!-- Passage -->
+        <div class="before-start">
+          <button id="start-typing-btn" class="sora-bold-medium">Start Typing Test</button>
+          <p class="sora-bold-medium">Or click the text and start typing</p>
+        </div>
+        
+        <input id="passage" type="text">
+        <div id="passage-div" class="passage">
+          <!-- <span class="placeholder">She walked to the store to buy some bread and milk. The shop was busy but she found what she needed quickly. On her way home, she saw a friend and waved.</span> -->
+        </div>
+        
+        <hr>
 
-  Start Typing Test
-  Or click the text and start typing
+        <button id="restart-btn" class="sora-bold-medium">
+          Restart Test
+          <img src="./assets/images/icon-restart.svg" alt="">
+        </button>
+      </div>
 
-  <!-- Test Complete Start -->
+    </div>
 
-  Test Complete!
-  Solid run. Keep pushing to beat your high score.
+    <div class="complete-page" style="display: none;">
+      <!-- Test Complete Start -->
+      
+      <img class="img" src="./assets/images/icon-completed.svg" alt="">
+      <h1 class="title sora-regular">Test Complete!</h1>
+      <p class="description sora-medium">Solid run. Keep pushing to beat your high score.</p>
 
-  WPM: <!-- WPM -->
-  Accuracy: <!-- Accuracy -->
-  Characters: <!-- Correct/Incorrect -->
+      <div class="results sora-medium">
+        <div>WPM: <span class="wpm sora-bold-medium"><!-- WPM --></span></div>
+        <div>Accuracy: <span class="accuracy sora-bold-medium"><!-- Accuracy --></span></div>
+        <div>Characters: 
+          <span class="sora-bold-medium">
+            <span class="correct"></span>
+            /
+            <span class="wrong"></span>
+          </span>
+        </div>
+      </div>
 
-  Go Again
-  
-  <!-- Test Complete End -->
+      <button id="go-again-btn" class="sora-bold-medium">
+        <span class="btn-text">Go Again</span>
+        <img src="./assets/images/icon-restart-dark.svg" alt="">
+      </button>
+      
+      <img id="star1" src="./assets/images/pattern-star-2.svg" alt="">
+      <img id="star2" src="./assets/images/pattern-star-1.svg" alt="">
 
-  <div class="attribution">
+      <!-- Test Complete End -->
+    </div>
+  </main>
+
+  <footer class="attribution">
     Challenge by <a href="https://www.frontendmentor.io?ref=challenge">Frontend Mentor</a>. 
-    Coded by <a href="#">Your Name Here</a>.
-  </div>
+    Coded by <a href="#">LYGreen</a>.
+  </footer>
 </body>
 </html>
