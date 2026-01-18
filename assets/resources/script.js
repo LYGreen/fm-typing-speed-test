@@ -89,7 +89,7 @@ class TypingTextbox {
     }
 
     /**
-     * Add a character to the text.
+     * Add a character to typed text.
      * @param {string} ch 
      */
     addCharacter(ch) {
@@ -148,14 +148,14 @@ class TypingTextbox {
     }
 
     /**
-     * Move the cursor to the start of typed text.
+     * Move cursor to the start of typed text.
      */
     moveCursorToStart() {
         this.cursor = 0;
     }
 
     /**
-     * Move the cursor to the end of typed text.
+     * Move cursor to the end of typed text.
      */
     moveCursorToEnd() {
         this.cursor = this.text.length;
@@ -165,6 +165,18 @@ class TypingTextbox {
 /* Variables */
 const typingTextBox = new TypingTextbox();
 
+/** @type {HTMLButtonElement} */
+const startTypingBtn = document.getElementById('start-typing-btn');
+
+/** @type {HTMLButtonElement} */
+const restartBtn = document.getElementById('restart-btn');
+
+/** @type {HTMLButtonElement} */
+const goAgainBtn = document.getElementById('go-again-btn');
+
+/** @type {HTMLDivElement} */
+const beforeStart = document.querySelector('.before-start');
+
 /** @type {HTMLInputElement} */
 const passageInput = document.getElementById('passage');
 
@@ -173,6 +185,17 @@ const passageElement = document.querySelector('.passage');
 
 /** @type {HTMLDivElement} */
 const passageDiv = document.getElementById('passage-div');
+
+const pages = {
+    typing: {
+        element: document.querySelector('.typing-page'),
+        display: 'block',
+    },
+    complete: {
+        element: document.querySelector('.complete-page'),
+        display: 'flex',
+    }
+};
 
 const colors = {
     neutral900: 'hsl(0, 0%, 7%)',
@@ -197,10 +220,55 @@ async function initialize() {
 
     typingTextBox.setWords(data.easy[0].text);
     updateShownTextbox();
+    blockTypingBox();
 }
 
 /**
- * Split the object into an array according to the text index.
+ * Blur typing box texts and show start button.
+ */
+function blockTypingBox() {
+    passageInput.disabled = true;
+    beforeStart.style.display = 'block';
+    passageDiv.querySelectorAll('span').forEach((e) => {
+        e.style.filter = 'blur(8px)';
+    });
+    passageDiv.style.cursor = 'default';
+    restartBtn.style.display = 'none';
+}
+
+/**
+ * Sharpen typing box texts and show restart button.
+ */
+function showTypingBox() {
+    passageInput.disabled = false;
+    beforeStart.style.display = 'none';
+    passageDiv.querySelectorAll('span').forEach((e) => {
+        e.style.filter = 'none';
+    });
+    passageDiv.style.cursor = 'text';
+    restartBtn.style.display = 'block';
+}
+
+/**
+ * Change pages.
+ * @param {'typing' | 'complete'} page 
+ */
+function changePageTo(page) {
+    Object.entries(pages).forEach(([key, value]) => {
+        value.element.style.display = 'none';
+    });
+    
+    if (page === 'typing') {
+        blockTypingBox();
+    } else if (page === 'complete') {
+
+    }
+
+    pages[page].element.style.display = pages[page].display;
+}
+
+/**
+ * Split an object into an array according to the text index.
  * @param {{ text: string }} obj An object containing text key.
  * @param {number} index The index of text
  * @returns {{ text: string }[]}
@@ -237,11 +305,9 @@ function splitByTextIndex(obj, index) {
 }
 
 /**
- * Update the texts of typing box.
+ * Update texts of typing box.
  */
 function updateShownTextbox() {
-    console.log(typingTextBox.strStatus);
-
     const status = [...typingTextBox.strStatus];
 
     let curPos1 = 0, curPos2 = 0, curLoc = 0;
@@ -321,6 +387,22 @@ passageInput.addEventListener('keydown', (e) => {
     }
 
     updateShownTextbox();
+    if (typingTextBox.isFinished()) {
+        changePageTo('complete');
+    }
+});
+
+startTypingBtn.addEventListener('click', (e) => {
+    showTypingBox();
+    passageInput.focus();
+});
+
+restartBtn.addEventListener('click', (e) => {
+    changePageTo('typing');
+});
+
+goAgainBtn.addEventListener('click', (e) => {
+    changePageTo('typing');
 });
 
 /* Calls */
