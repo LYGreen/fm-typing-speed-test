@@ -208,6 +208,168 @@ class Timer {
     }
 }
 
+class Confetti {
+    static Acceleration = 0.8;
+    static MaxVelocityY = 30;
+
+    /**
+     * Confetti
+     * @param {HTMLElement} element 
+     * @param {{ x: number, y: number }} position 
+     * @param {{ x: number, y: number }} initVelocity 
+     */
+    constructor(element, position = { x: 0, y: 0 }, initVelocity = { x: 0.0, y: 0.0 }) {
+        /** @type {HTMLDivElement} */
+        this.element = element;
+
+        /** @type {{ x: number, y: number }} */
+        this.position = position;
+
+        /** @type {{ x: number, y: number }} */
+        this.velocity = initVelocity;
+
+        this.element.classList.add('confetti');
+        this.element.style.left = `${this.position.x}px`;
+        this.element.style.top = `${this.position.y}px`;
+
+        const r = Math.random() * 256;
+        const g = Math.random() * 256;
+        const b = Math.random() * 256;
+        this.element.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    }
+
+    /**
+     * Reset position and initial velocity.
+     * @param {{ x: number, y: number }} pos 
+     * @param {{ x: number, y: number }} initVelt 
+     */
+    reset(pos = { x: 0, y: 0 }, initVelt = { x: 0, y: 0 }) {
+        this.position = { x: pos.x, y: pos.y };
+        this.velocity = { x: initVelt.x, y: initVelt.y };
+
+        this.element.style.left = `${this.position.x}px`;
+        this.element.style.top = `${this.position.y}px`;
+    }
+
+    /**
+     * Move.
+     */
+    move() {
+        this.velocity.y = Math.min(this.velocity.y + Confetti.Acceleration, Confetti.MaxVelocityY);
+
+        this.position.x += this.velocity.x;
+        this.position.y += this.velocity.y;
+
+        this.element.style.left = `${this.position.x}px`;
+        this.element.style.top = `${this.position.y}px`;
+    }
+}
+
+class ConfettiCannon {
+    /**
+     * Confetti cannon
+     * @param {HTMLElement} parentElement 
+     * @param {number} count 
+     * @param {number} posx 
+     * @param {number} posy 
+     * @param {number} angle
+     */
+    constructor(parentElement, count, posx, posy, angle) {        
+        /** @type {Confetti[]} */
+        this.entities = [];
+
+        this.position = { x: posx, y: posy };
+        this.angle = angle;
+
+        for (let i = 0; i < count; i++) {
+            const element = document.createElement('div');
+            parentElement.appendChild(element);
+
+            const minSpeedY = 30;
+            const maxSpeedY = 35;
+            const minSpeedX = 5;
+            const maxSpeedX = 35;
+            const realAngle = angle + (Math.random() * 15 - 7.5);
+            const rad = realAngle * Math.PI / 180;
+            const speedX = Math.random() * (maxSpeedX - minSpeedX) + minSpeedX;
+            const speedY = Math.random() * (maxSpeedY - minSpeedY) + minSpeedY;
+            const vx = Math.cos(rad) * speedX;
+            const vy = Math.sin(rad) * speedY;
+
+            const c = new Confetti(element, {
+                x: posx,
+                y: posy,
+            }, {
+                x: vx,
+                y: vy,
+            });
+
+            this.entities.push(c);
+        }
+    }
+
+    /**
+     * Reset the position and angle.
+     * @param {number} posx 
+     * @param {number} posy 
+     * @param {number} angle 
+     */
+    reset(posx, posy, angle) {
+        this.position = { x: posx, y: posy };
+        this.angle = angle;
+
+        for (let i = 0; i < this.entities.length; i++) {
+            const minSpeedY = 30;
+            const maxSpeedY = 35;
+            const minSpeedX = 5;
+            const maxSpeedX = 35;
+            const realAngle = this.angle + (Math.random() * 15 - 7.5);
+            const rad = realAngle * Math.PI / 180;
+            const speedX = Math.random() * (maxSpeedX - minSpeedX) + minSpeedX;
+            const speedY = Math.random() * (maxSpeedY - minSpeedY) + minSpeedY;
+            const vx = Math.cos(rad) * speedX;
+            const vy = Math.sin(rad) * speedY;
+
+            this.entities[i].reset(this.position, {
+                x: vx,
+                y: vy,
+            });
+        }
+    }
+
+    tick = () => {
+        const yBound = computeRightConfetticannonPosX();
+
+        const es = this.entities.filter((e) => {
+            return Number.parseInt(e.element.style.top) < yBound;
+        });
+        es.forEach((e) => {
+            e.move();
+        })
+
+        const outs = this.entities.filter((e) => {
+            return Number.parseInt(e.element.style.top) >= yBound
+                || Number.parseInt(e.element.style.left) <= 0
+                || Number.parseInt(e.element.style.left) >= computeRightConfetticannonPosX() + 5;
+        });
+        outs.forEach((e) => {
+            e.element.style.display = 'none';
+        })
+
+        if (es.length !== 0) {
+            requestAnimationFrame(this.tick);
+        }
+    }
+
+    shoot() {
+        this.entities.forEach((e) => {
+            e.element.style.display = 'block';
+        });
+
+        requestAnimationFrame(this.tick);
+    }
+}
+
 /* Variables */
 const typingTextBox = new TypingTextbox();
 
@@ -343,10 +505,15 @@ const typingStatus = {
 };
 
 let data = null;
+let startTime = null;
+let timerId = null;
+let shootInterval = null;
+const leftConfettiCannon = new ConfettiCannon(pages.complete.element, 100, 10, 800, -70);
+const rightConfettiCannon = new ConfettiCannon(pages.complete.element, 100, computeRightConfetticannonPosX(), 800, -180 + 70);
 
 /* Functions */
 async function initialize() {
-    typingStatus.personalBest = 0;
+    typingStatus.personalBest = localStorage.getItem('personal-best') ?? 0;
 
     personalBestWpm.textContent = typingStatus.personalBest;
 
@@ -482,7 +649,10 @@ function changePageTo(page) {
         if (oldPersonalBest === 0) {
             updateResults('firstTest');
         } else if (typingStatus.wpm > oldPersonalBest) {
+            console.log(typingStatus);
+            console.log(oldPersonalBest);
             updateResults('newPersonalTest');
+            celebrate();
         } else {
             updateResults('normalTest');
         }
@@ -641,7 +811,7 @@ function updateTimeInfo() {
  * @param {'firstTest' | 'newPersonalTest' | 'normalTest'} test 
  */
 function updateResults(test) {
-
+    console.log(test);
     /** @type {HTMLDivElement} */
     const completePageDiv = document.querySelector('.complete-page');
 
@@ -694,6 +864,8 @@ function updateResults(test) {
     wrong.textContent = wrongCnt;
     buttonText.textContent = results[test].buttonText;
     personalBestWpm.textContent = typingStatus.personalBest;
+
+    localStorage.setItem('personal-best', typingStatus.personalBest);
 }
 
 /**
@@ -718,6 +890,46 @@ function stopTyping() {
 function restartTyping() {
     stopTyping();
     startTyping();
+}
+
+/**
+ * Compute right confetti cannon X axis. (It adapts automatically when the window size changes.)
+ * @returns The X axis of right confetticannon
+ */
+function computeRightConfetticannonPosX() {
+    return document.documentElement.clientWidth - 10;
+}
+
+/**
+ * Celebrate when beating personal best.
+ */
+function celebrate() {
+    if (shootInterval) {
+        clearInterval(shootInterval);
+    }
+    shootInterval = setInterval(confettiCannonShoot, 3000);
+    leftConfettiCannon.reset(0, 800, -70);
+    rightConfettiCannon.reset(computeRightConfetticannonPosX(), 800, -180 + 70);
+    leftConfettiCannon.shoot();
+    rightConfettiCannon.shoot();
+}
+
+/**
+ * Start confetti cannon shooting.
+ */
+function confettiCannonShoot() {
+    leftConfettiCannon.reset(0, 800, -70);
+    rightConfettiCannon.reset(computeRightConfetticannonPosX(), 800, -180 + 70);
+    leftConfettiCannon.shoot();
+    rightConfettiCannon.shoot();
+}
+
+/**
+ * Stop confetti cannon shooting.
+ */
+function stopConfettiCannonShooting() {
+    clearInterval(shootInterval);
+    shootInterval = null;
 }
 
 /* Events */
@@ -769,6 +981,7 @@ goAgainBtn.addEventListener('click', (e) => {
     resetStatus();
     allowOptions();
     changePageTo('typing');
+    stopConfettiCannonShooting();
 });
 
 difficultyElements.forEach((e) => {

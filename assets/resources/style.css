@@ -403,6 +403,14 @@ footer {
     }
 }
 
+.confetti {
+    display: none;
+    position: absolute;
+    background-color: var(--blue-400);
+    width: 8px;
+    height: 4px;
+}
+
 .attribution { 
     font-size: 11px; 
     text-align: center; 
