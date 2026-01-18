@@ -214,6 +214,7 @@ footer {
     position: relative;
 
     .before-start {
+        display: none;
         position: absolute;
         left: 50%;
         top: 50%;
@@ -294,6 +295,23 @@ footer {
         }
     }
 
+}
+
+.correct-words {
+    color: var(--green-500);
+}
+
+.wrong-words {
+    color: var(--red-500);
+    text-decoration: underline;
+}
+
+.normal-words {
+    color: gray;
+}
+
+.cursor {
+    background-color: var(--blue-400);
 }
 
 .attribution { 
