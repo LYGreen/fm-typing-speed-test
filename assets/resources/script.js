@@ -162,8 +162,88 @@ class TypingTextbox {
     }
 };
 
+class Timer {
+    /**
+     * Timer
+     * @param {number} interval Interval.
+     * @param {Function} func Function callback.
+     */
+    constructor(interval = 1000, func = null) {
+        this.startTime = 0;
+        this.interval = interval;
+        this.elapsed = 0;
+        this.func = func;
+        this.timer = null;
+    }
+
+    /**
+     * Start counting.
+     */
+    start() {
+        this.startTime = Date.now();
+        let itv = 0;
+        this.timer = setInterval(() => {
+            const now = Date.now();
+            const dt = now - this.startTime - this.elapsed;
+            this.elapsed = now - this.startTime;
+            itv += dt;
+
+            if (this.func != null && itv >= this.interval) {
+                this.func();
+                itv -= this.interval;
+            }
+        }, 100);
+    }
+
+    /**
+     * Stop counting.
+     */
+    stop() {
+        this.startTime = 0;
+        this.elapsed = 0;
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+}
+
 /* Variables */
 const typingTextBox = new TypingTextbox();
+
+/**
+ * WPM timer computing wpm.
+ */
+const wpmTimer = new Timer(100, () => {
+    let correctCount = 0;
+    const totalTyped = typingTextBox.text.length;
+    for (const ss of typingTextBox.strStatus) {
+        if (ss.value === 'correct') {
+            correctCount += ss.text.length;
+        }
+    }
+
+    typingStatus.wpm = Math.trunc(correctCount / 5 * (60000 / wpmTimer.elapsed));
+
+    updateWpmInfo();
+});
+
+/**
+ * Second timer computing time.
+ */
+const secondTimer = new Timer(1000, () => {
+    if (typingStatus.mode === 'timed') {
+        typingStatus.time = Math.ceil(60 - secondTimer.elapsed / 1000);
+        if (typingStatus.time <= 0) {
+            stopTyping();
+            changePageTo('complete');
+        }
+    } else if (typingStatus.mode === 'passage') {
+        typingStatus.time = Math.trunc(secondTimer.elapsed / 1000);
+    }
+
+    updateTimeInfo();
+});
 
 /** @type {HTMLButtonElement} */
 const startTypingBtn = document.getElementById('start-typing-btn');
@@ -186,6 +266,24 @@ const passageElement = document.querySelector('.passage');
 /** @type {HTMLDivElement} */
 const passageDiv = document.getElementById('passage-div');
 
+/** @type {HTMLSpanElement} */
+const currentWpm = document.querySelector('.computations .wpm')
+
+/** @type {HTMLSpanElement} */
+const currentAccuracy = document.querySelector('.computations .accuracy');
+
+/** @type {HTMLSpanElement} */
+const currentTime = document.querySelector('.computations .time');
+
+/** @type {HTMLInputElement[]} */
+const difficultyElements = document.querySelectorAll('input[name=difficulty]');
+
+/** @type {HTMLInputElement[]} */
+const modeElements = document.querySelectorAll('input[name=mode]');
+
+/** @type {HTMLSpanElement} */
+const personalBestWpm = document.getElementById('personal-best-wpm');
+
 const pages = {
     typing: {
         element: document.querySelector('.typing-page'),
@@ -195,6 +293,27 @@ const pages = {
         element: document.querySelector('.complete-page'),
         display: 'flex',
     }
+};
+
+const results = {
+    firstTest: {
+        image: './assets/images/icon-completed.svg',
+        title: 'Baseline Established!',
+        description: 'You\'ve set the bar. Now the real challenge begins--time to beat it.',
+        buttonText: 'Beat This Score',
+    },
+    newPersonalTest: {
+        image: './assets/images/icon-new-pb.svg',
+        title: 'High Score Smashed!',
+        description: 'You\'re getting faster. That was incredible typing.',
+        buttonText: 'Beat This Score',
+    },
+    normalTest: {
+        image: './assets/images/icon-completed.svg',
+        title: 'Test Complete!',
+        description: 'Solid run. Keep pushing to beat your high score.',
+        buttonText: 'Go Again',
+    },
 };
 
 const colors = {
@@ -210,17 +329,70 @@ const colors = {
     yellow400: 'hsl(49, 85%, 70%)',
 };
 
+const typingStatus = {
+    personalBest: 0,
+    wpm: 0,
+    accuracy: 0.0,
+    time: 0,
+
+    /** @type {'easy' | 'medium' | 'hard'} */
+    difficulty: 'easy',
+
+    /** @type {'timed' | 'passage'} */
+    mode: 'timed',
+};
+
 let data = null;
 
 /* Functions */
 async function initialize() {
+    typingStatus.personalBest = 0;
+
+    personalBestWpm.textContent = typingStatus.personalBest;
+
     const res = await fetch('./data.json');
     const d = await res.json();
     data = d;
 
-    typingTextBox.setWords(data.easy[0].text);
-    updateShownTextbox();
+    randomTypingWords();
+
+    resetStatus();
+
     blockTypingBox();
+}
+
+/**
+ * Reset all status (wpm, accuracy, time, new target texts).
+ */
+function resetStatus() {
+    typingStatus.wpm = 0;
+    typingStatus.accuracy = 100;
+    
+    typingTextBox.clearText();
+
+    changeDifficultyTo(typingStatus.difficulty);
+    changeModeTo(typingStatus.mode);
+
+    updateWpmInfo();
+    updateAccuracyInfo();
+    updateTimeInfo();
+}
+
+/**
+ * Compute accuracy.
+ */
+function computeAccuracy() {
+    let correctCount = 0;
+    const totalTyped = typingTextBox.text.length;
+    for (const ss of typingTextBox.strStatus) {
+        if (ss.value === 'correct') {
+            correctCount += ss.text.length;
+        }
+    }
+
+    typingStatus.accuracy = Math.trunc((totalTyped !== 0 ? correctCount / totalTyped : 0) * 100);
+
+    updateAccuracyInfo();
 }
 
 /**
@@ -250,6 +422,49 @@ function showTypingBox() {
 }
 
 /**
+ * Block difficulty and mode options.
+ */
+function blockOptions() {
+    difficultyElements.forEach((e) => {
+        e.disabled = true;
+    });
+
+    modeElements.forEach((e) => {
+        e.disabled = true;
+    });
+}
+
+/**
+ * Allow difficulty and mode options.
+ */
+function allowOptions() {
+    difficultyElements.forEach((e) => {
+        e.disabled = false;
+    });
+
+    modeElements.forEach((e) => {
+        e.disabled = false;
+    });
+}
+
+/**
+ * Set a random typing target texts according the difficulty.
+ */
+function randomTypingWords() {
+    const dfct = typingStatus.difficulty;
+
+    /** @type {{ id: string, text: string }[]} */
+    const arr = data[dfct];
+    const obj = arr[Math.floor(Math.random() * arr.length)];
+
+    const text = obj.text;
+
+    typingTextBox.setWords(text);
+    
+    updateShownTextbox();
+}
+
+/**
  * Change pages.
  * @param {'typing' | 'complete'} page 
  */
@@ -261,10 +476,42 @@ function changePageTo(page) {
     if (page === 'typing') {
         blockTypingBox();
     } else if (page === 'complete') {
-
+        const oldPersonalBest = typingStatus.personalBest;
+        typingStatus.personalBest = Math.max(typingStatus.personalBest, typingStatus.wpm);
+        
+        if (oldPersonalBest === 0) {
+            updateResults('firstTest');
+        } else if (typingStatus.wpm > oldPersonalBest) {
+            updateResults('newPersonalTest');
+        } else {
+            updateResults('normalTest');
+        }
     }
 
     pages[page].element.style.display = pages[page].display;
+}
+
+/**
+ * Change difficulty.
+ * @param {'easy' | 'medium' | 'hard'} difficulty 
+ */
+function changeDifficultyTo(difficulty) {
+    typingStatus.difficulty = difficulty;
+    randomTypingWords();
+}
+
+/**
+ * Change mode.
+ * @param {'timed' | 'passage'} mode 
+ */
+function changeModeTo(mode) {
+    typingStatus.mode = mode;
+    if (mode === 'timed') {
+        typingStatus.time = 60;
+    } else if (mode === 'passage') {
+        typingStatus.time = 0;
+    }
+    updateTimeInfo();
 }
 
 /**
@@ -364,6 +611,115 @@ function updateShownTextbox() {
     }
 }
 
+/**
+ * Update wpm info on web.
+ */
+function updateWpmInfo() {
+    currentWpm.textContent = typingStatus.wpm;
+}
+
+/**
+ * Update accuracy info on web.
+ */
+function updateAccuracyInfo() {
+    currentAccuracy.textContent = `${typingStatus.accuracy}%`;
+    currentAccuracy.style.color = typingStatus.accuracy === 100 ? colors.green500 : colors.red500;
+}
+
+/**
+ * Update time info on web.
+ */
+function updateTimeInfo() {
+    const minute = Math.trunc(typingStatus.time / 60).toString();
+    const second = (Math.trunc(typingStatus.time) % 60).toString().padStart(2, '0');
+
+    currentTime.textContent = `${minute}:${second}`;
+}
+
+/**
+ * Update the complete page. According to the user WPM, show different complete page.
+ * @param {'firstTest' | 'newPersonalTest' | 'normalTest'} test 
+ */
+function updateResults(test) {
+
+    /** @type {HTMLDivElement} */
+    const completePageDiv = document.querySelector('.complete-page');
+
+    /** @type {HTMLImageElement} */
+    const image = completePageDiv.querySelector('.img');
+
+    /** @type {HTMLHeadingElement} */
+    const title = completePageDiv.querySelector('.title');
+
+    /** @type {HTMLParagraphElement} */
+    const description = completePageDiv.querySelector('.description');
+
+    /** @type {HTMLSpanElement} */
+    const wpm = completePageDiv.querySelector('.results .wpm');
+
+    /** @type {HTMLSpanElement} */
+    const accuracy = completePageDiv.querySelector('.results .accuracy');
+
+    /** @type {HTMLSpanElement} */
+    const correct = completePageDiv.querySelector('.results .correct');
+
+    /** @type {HTMLSpanElement} */
+    const wrong = completePageDiv.querySelector('.results .wrong');
+
+    /** @type {HTMLSpanElement} */
+    const buttonText = completePageDiv.querySelector('.btn-text');
+
+    let correctCnt = 0, wrongCnt = 0;
+    for (const ss of typingTextBox.strStatus) {
+        if (ss.value === 'correct') {
+            correctCnt += ss.text.length;
+        } else if (ss.value === 'wrong') {
+            wrongCnt += ss.text.length;
+        }
+    }
+
+    image.src = results[test].image;
+    if (test === 'newPersonalTest') {
+        image.classList.remove('img-shadow');
+    } else {
+        image.classList.add('img-shadow');
+    }
+
+    title.textContent = results[test].title;
+    description.textContent = results[test].description;
+    wpm.textContent = typingStatus.wpm;
+    accuracy.textContent = `${typingStatus.accuracy}%`;
+    accuracy.style.color = typingStatus.accuracy === 100 ? colors.green500 : colors.red500;
+    correct.textContent = correctCnt;
+    wrong.textContent = wrongCnt;
+    buttonText.textContent = results[test].buttonText;
+    personalBestWpm.textContent = typingStatus.personalBest;
+}
+
+/**
+ * Start typing. Set up timers.
+ */
+function startTyping() {
+    wpmTimer.start();
+    secondTimer.start();
+}
+
+/**
+ * Stop typing. Stop timers.
+ */
+function stopTyping() {
+    wpmTimer.stop();
+    secondTimer.stop();
+}
+
+/**
+ * Restart typing. Reset timers.
+ */
+function restartTyping() {
+    stopTyping();
+    startTyping();
+}
+
 /* Events */
 passageElement.addEventListener('click', () => {
     passageInput.focus({ preventScroll: true });
@@ -374,8 +730,10 @@ passageInput.addEventListener('keydown', (e) => {
 
     if (e.key.length === 1) {
         typingTextBox.addCharacter(e.key);
+        computeAccuracy();
     } else if (e.key.toLocaleLowerCase() === 'backspace') {
         typingTextBox.removeCharacter();
+        computeAccuracy();
     } else if (e.key.toLocaleLowerCase() === 'arrowleft') {
         typingTextBox.moveCursorForward();
     } else if (e.key.toLocaleLowerCase() === 'arrowright') {
@@ -388,21 +746,41 @@ passageInput.addEventListener('keydown', (e) => {
 
     updateShownTextbox();
     if (typingTextBox.isFinished()) {
+        stopTyping();
         changePageTo('complete');
     }
 });
 
 startTypingBtn.addEventListener('click', (e) => {
+    startTyping();
     showTypingBox();
+    blockOptions();
     passageInput.focus();
 });
 
 restartBtn.addEventListener('click', (e) => {
+    stopTyping();
+    resetStatus();
+    allowOptions();
     changePageTo('typing');
 });
 
 goAgainBtn.addEventListener('click', (e) => {
+    resetStatus();
+    allowOptions();
     changePageTo('typing');
+});
+
+difficultyElements.forEach((e) => {
+    e.addEventListener('change', (ev) => {
+        changeDifficultyTo(ev.target.value);
+    });
+});
+
+modeElements.forEach((e) => {
+    e.addEventListener('change', (ev) => {
+        changeModeTo(ev.target.value);
+    });
 });
 
 /* Calls */
