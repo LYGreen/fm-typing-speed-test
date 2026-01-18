@@ -30,8 +30,8 @@ Users should be able to:
 
 ### Links
 
-- Solution URL: https://www.frontendmentor.io/solutions/typing-speed-test-made-using-html-css-and-javascript-hAZzrAPzk_
-- Live Site URL: https://lygreen.github.io/fm-typing-speed-test
+- Solution URL: [Solution URL](https://www.frontendmentor.io/solutions/typing-speed-test-made-using-html-css-and-javascript-hAZzrAPzk_)
+- Live Site URL: [Live Site URL](https://lygreen.github.io/fm-typing-speed-test)
 
 ## My process
 
